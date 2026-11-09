@@ -1,21 +1,26 @@
 package com.example.minforstaapp
 
+import androidx.compose.ui.focus.FocusDirection
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.focus.FocusDirection
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
@@ -26,8 +31,25 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            MinForstaAppTheme {
-                Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
+            // Svart och lila färgtema med kontraster
+            val darkPurpleColorScheme = darkColorScheme(
+                primary = Color(0xFFBB86FC), // Stark lila
+                onPrimary = Color(0xFF121212),
+                primaryContainer = Color(0xFF3700B3), // Mörkare lila container
+                onPrimaryContainer = Color(0xFFEDE7F6),
+                secondary = Color(0xFF03DAC6), // Turkos/accent
+                background = Color(0xFF121212), // Djup svart bakgrund
+                surface = Color(0xFF1E1E1E), // Ljusare svart för kort
+                onSurface = Color(0xFFE0E0E0),
+                surfaceVariant = Color(0xFF2C2C2C),
+                onSurfaceVariant = Color(0xFFB0B0B0)
+            )
+
+            MaterialTheme(colorScheme = darkPurpleColorScheme) {
+                Surface(
+                    modifier = Modifier.fillMaxSize(),
+                    color = MaterialTheme.colorScheme.background
+                ) {
                     HunddagisApp()
                 }
             }
@@ -43,13 +65,16 @@ fun HunddagisApp() {
 
     when (currentScreen) {
         0 -> HuvudMeny(onNavigate = { currentScreen = it })
-        1 -> RegistreraHundSkarm(onBack = { currentScreen = 0 }, onDogRegistered = {
-            if (register.addDog(it)) {
-                Toast.makeText(context, "Hunden ${it.name} har registrerats!", Toast.LENGTH_SHORT).show()
-            } else {
-                Toast.makeText(context, "Chipnumret finns redan!", Toast.LENGTH_SHORT).show()
+        1 -> RegistreraHundSkarm(
+            onBack = { currentScreen = 0 },
+            onDogRegistered = { dog ->
+                if (register.addDog(dog)) {
+                    Toast.makeText(context, "Hunden ${dog.name} har välkomnats till J och J's! 🐾", Toast.LENGTH_SHORT).show()
+                } else {
+                    Toast.makeText(context, "Chipnumret finns redan i registret!", Toast.LENGTH_SHORT).show()
+                }
             }
-        })
+        )
         2 -> VisaHundarSkarm(register, false) { currentScreen = 0 }
         3 -> SokHundSkarm(register) { currentScreen = 0 }
         8 -> VisaHundarSkarm(register, true) { currentScreen = 0 }
@@ -60,23 +85,80 @@ fun HunddagisApp() {
 @Composable
 fun HuvudMeny(onNavigate: (Int) -> Unit) {
     Column(
-        modifier = Modifier.fillMaxSize().padding(16.dp).verticalScroll(rememberScrollState()),
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(24.dp)
+            .verticalScroll(rememberScrollState()),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+        verticalArrangement = Arrangement.Center
     ) {
-        Text("===== HUNDDAGIS =====", style = MaterialTheme.typography.headlineMedium, modifier = Modifier.padding(vertical = 16.dp))
-        MenuButton("1. Registrera hund") { onNavigate(1) }
-        MenuButton("2. Visa alla hundar") { onNavigate(2) }
-        MenuButton("3. Sök efter hund") { onNavigate(3) }
-        MenuButton("4. Ändra hunduppgifter") { onNavigate(2) }
-        MenuButton("8. Visa incheckade hundar") { onNavigate(8) }
-        MenuButton("9. Visa statistik & kostnader") { onNavigate(9) }
+        Icon(
+            imageVector = Icons.Default.Pets,
+            contentDescription = null,
+            modifier = Modifier.size(68.dp),
+            tint = MaterialTheme.colorScheme.primary
+        )
+        Spacer(modifier = Modifier.height(12.dp))
+        Text(
+            "🐾 J och J's Hunddagis 🐶",
+            style = MaterialTheme.typography.headlineMedium,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.primary
+        )
+        Text(
+            "Välkommen till administrationen!",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+
+        Spacer(modifier = Modifier.height(32.dp))
+
+        Column(
+            modifier = Modifier.fillMaxWidth(0.95f),
+            verticalArrangement = Arrangement.spacedBy(14.dp)
+        ) {
+            MenuCardButton("Registrera ny hund", "🐶", Icons.Default.AddCircle) { onNavigate(1) }
+            MenuCardButton("Visa alla hundar", "📋", Icons.Default.List) { onNavigate(2) }
+            MenuCardButton("Sök efter hund", "🔍", Icons.Default.Search) { onNavigate(3) }
+            MenuCardButton("Ändra hunduppgifter", "✏️", Icons.Default.Edit) { onNavigate(2) }
+            MenuCardButton("Incheckade hundar", "✅", Icons.Default.CheckCircle) { onNavigate(8) }
+            MenuCardButton("Statistik & kostnader", "📊", Icons.Default.BarChart) { onNavigate(9) }
+        }
     }
 }
 
 @Composable
-fun MenuButton(text: String, onClick: () -> Unit) {
-    Button(onClick = onClick, modifier = Modifier.fillMaxWidth(0.85f).height(48.dp)) { Text(text) }
+fun MenuCardButton(text: String, emoji: String, icon: androidx.compose.ui.graphics.vector.ImageVector, onClick: () -> Unit) {
+    Card(
+        onClick = onClick,
+        modifier = Modifier.fillMaxWidth().height(64.dp),
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant
+        )
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 20.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(text = emoji, style = MaterialTheme.typography.titleLarge)
+            Spacer(modifier = Modifier.width(16.dp))
+            Text(
+                text = text,
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            Spacer(modifier = Modifier.weight(1f))
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary
+            )
+        }
+    }
 }
 
 @Composable
@@ -95,63 +177,137 @@ fun RegistreraHundSkarm(onBack: () -> Unit, onDogRegistered: (Dog) -> Unit) {
     val focusManager = LocalFocusManager.current
 
     Column(
-        modifier = Modifier.fillMaxSize().padding(16.dp).verticalScroll(rememberScrollState()),
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(20.dp)
+            .verticalScroll(rememberScrollState()),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+        verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        Text("--- REGISTRERA HUND ---", style = MaterialTheme.typography.headlineSmall)
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            IconButton(onClick = onBack) {
+                Icon(Icons.Default.ArrowBack, contentDescription = "Tillbaka", tint = MaterialTheme.colorScheme.primary)
+            }
+            Text(
+                "🐶 Registrera ny hund",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.padding(start = 8.dp)
+            )
+        }
 
         OutlinedTextField(
-            value = name, onValueChange = { name = it }, label = { Text("Namn") }, modifier = Modifier.fillMaxWidth(),
+            value = name, onValueChange = { name = it },
+            label = { Text("Hundens namn") },
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(16.dp),
             singleLine = true,
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
             keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Next) })
         )
         OutlinedTextField(
-            value = breed, onValueChange = { breed = it }, label = { Text("Ras") }, modifier = Modifier.fillMaxWidth(),
+            value = breed, onValueChange = { breed = it },
+            label = { Text("Ras") },
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(16.dp),
             singleLine = true,
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
             keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Next) })
         )
         OutlinedTextField(
-            value = chip, onValueChange = { chip = it }, label = { Text("Chipnummer") }, modifier = Modifier.fillMaxWidth(),
+            value = chip, onValueChange = { chip = it },
+            label = { Text("Chipnummer") },
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(16.dp),
             singleLine = true,
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
             keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Next) })
         )
         OutlinedTextField(
-            value = ageText, onValueChange = { ageText = it }, label = { Text("Ålder") }, modifier = Modifier.fillMaxWidth(),
+            value = ageText, onValueChange = { ageText = it },
+            label = { Text("Ålder (år)") },
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(16.dp),
             singleLine = true,
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Done),
             keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() })
         )
 
-        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-            Text("Kön: ${if (gender == "H") "Hane" else "Tik"}")
-            Spacer(modifier = Modifier.weight(1f))
-            Button(onClick = { gender = if (gender == "H") "T" else "H" }) { Text("Ändra") }
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text("Kön: ${if (gender == "H") "Hane 🐕" else "Tik 🐩"}", fontWeight = FontWeight.Bold)
+                Spacer(modifier = Modifier.weight(1f))
+                Button(
+                    onClick = { gender = if (gender == "H") "T" else "H" },
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Text("Byt kön")
+                }
+            }
         }
 
-        FormSwitch("Kan sitta med andra hundar", sit) { sit = it }
-        FormSwitch("Kastrerad", neutered) { neutered = it }
-        FormSwitch("Behöver pälsvård", groom) { groom = it }
-        FormSwitch("Synnedsättning", vision) { vision = it }
-        FormSwitch("Hörselnedsättning", hearing) { hearing = it }
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+        ) {
+            Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text("✨ Egenskaper & Status", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                Spacer(modifier = Modifier.height(4.dp))
+                FormSwitch("Sitter fint med andra hundar 🐾", sit) { sit = it }
+                FormSwitch("Kastrerad ✂️", neutered) { neutered = it }
+                FormSwitch("Behöver pälsvård 🪮", groom) { groom = it }
+                FormSwitch("Synnedsättning 👁️‍🗨️", vision) { vision = it }
+                FormSwitch("Hörselnedsättning 🦻", hearing) { hearing = it }
+            }
+        }
 
-        Button(onClick = {
-            val age = ageText.toIntOrNull() ?: 0
-            onDogRegistered(Dog(name, breed, chip, gender, age, sit, neutered, groom, vision, hearing))
-            onBack()
-        }, modifier = Modifier.fillMaxWidth()) { Text("Spara och registrera hund") }
-        OutlinedButton(onClick = onBack, modifier = Modifier.fillMaxWidth()) { Text("Avbryt") }
+        Spacer(modifier = Modifier.height(8.dp))
+
+        Button(
+            onClick = {
+                val age = ageText.toIntOrNull() ?: 0
+                onDogRegistered(Dog(name, breed, chip, gender, age, sit, neutered, groom, vision, hearing))
+                onBack()
+            },
+            modifier = Modifier.fillMaxWidth().height(54.dp),
+            shape = RoundedCornerShape(20.dp)
+        ) {
+            Text("💖 Spara och registrera hund", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodyLarge)
+        }
+
+        OutlinedButton(
+            onClick = onBack,
+            modifier = Modifier.fillMaxWidth().height(52.dp),
+            shape = RoundedCornerShape(20.dp)
+        ) {
+            Text("Avbryt")
+        }
+
+        Spacer(modifier = Modifier.height(24.dp))
     }
 }
 
-
 @Composable
 fun FormSwitch(label: String, checked: Boolean, onCheckedChange: (Boolean) -> Unit) {
-    Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-        Text(label)
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(label, style = MaterialTheme.typography.bodyMedium)
         Spacer(modifier = Modifier.weight(1f))
         Switch(checked = checked, onCheckedChange = onCheckedChange)
     }
@@ -159,4 +315,8 @@ fun FormSwitch(label: String, checked: Boolean, onCheckedChange: (Boolean) -> Un
 
 @Preview(showBackground = true)
 @Composable
-fun AppPreview() { MinForstaAppTheme { HunddagisApp() } }
+fun AppPreview() {
+    MinForstaAppTheme {
+        HunddagisApp()
+    }
+}

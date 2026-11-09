@@ -15,9 +15,8 @@ class Dog(
     var visionImpaired: Boolean,
     var hearingImpaired: Boolean
 ) {
-    // Status för incheckning (motsvarar dina privata variabler)
     var isCheckedIn: Boolean = false
-        private set // Kan bara ändras inifrån klassen via funktionen nedan
+        private set
 
     var checkInTime: LocalDateTime? = null
     var checkOutTime: LocalDateTime? = null
@@ -26,7 +25,6 @@ class Dog(
         private const val HOURLY_RATE = 50.0
     }
 
-    // Motsvarar public void setCheckedIn(boolean checkedIn)
     fun updateCheckInStatus(checkedIn: Boolean) {
         if (this.isCheckedIn == checkedIn) return
 
@@ -40,7 +38,6 @@ class Dog(
         }
     }
 
-    // Motsvarar public long getStayMinutes()
     fun getStayMinutes(): Long {
         val startTime = checkInTime ?: return 0
         val endTime = if (isCheckedIn) LocalDateTime.now() else checkOutTime ?: return 0
@@ -49,7 +46,6 @@ class Dog(
         return Math.max(0, minutes)
     }
 
-    // Motsvarar public double getCost()
     fun getCost(): Double {
         return getStayMinutes() * HOURLY_RATE / 60.0
     }
