@@ -59,9 +59,9 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun HunddagisApp() {
-    val register = remember { DogRegister() }
-    var currentScreen by remember { mutableStateOf(0) }
     val context = LocalContext.current
+    val register = remember { DogRegister(context) }
+    var currentScreen by remember { mutableStateOf(0) }
 
     when (currentScreen) {
         0 -> HuvudMeny(onNavigate = { currentScreen = it })

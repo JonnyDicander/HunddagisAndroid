@@ -1,52 +1,76 @@
 package com.example.minforstaapp
 
-class DogRegister {
-    // Lista som lagrar alla registrerade hundar (motsvarar din ArrayList)
+import android.content.Context
+import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
+
+class DogRegister(context: Context) {
+    private val prefs = context.getSharedPreferences("dog_prefs", Context.MODE_PRIVATE)
+    private val gson = Gson()
     private val dogs = mutableListOf<Dog>()
 
-    // Motsvarar register.addDog(dog) - returnerar false om chipnumret redan finns
+    init {
+        loadDogs()
+    }
+
+    private fun saveDogs() {
+        val json = gson.toJson(dogs)
+        prefs.edit().putString("saved_dogs", json).apply()
+    }
+
+    private fun loadDogs() {
+        val json = prefs.getString("saved_dogs", null)
+        if (json != null) {
+            val type = object : TypeToken<List<Dog>>() {}.type
+            val savedList: List<Dog> = gson.fromJson(json, type)
+            dogs.clear()
+            dogs.addAll(savedList)
+        }
+    }
+
     fun addDog(dog: Dog): Boolean {
         if (findDog(dog.chipNumber) != null) {
             return false
         }
         dogs.add(dog)
+        saveDogs()
         return true
     }
 
-    // Motsvarar register.findDog(chipNumber)
     fun findDog(chipNumber: String): Dog? {
         return dogs.find { it.chipNumber == chipNumber }
     }
 
-    // Motsvarar din register.searchDog(search) för både namn och chipnummer
     fun searchDog(query: String): Dog? {
         return dogs.find {
             it.name.equals(query, ignoreCase = true) || it.chipNumber == query
         }
     }
 
-    // Motsvarar register.removeDog(chipNumber)
     fun removeDog(chipNumber: String): Boolean {
         val dog = findDog(chipNumber)
         return if (dog != null) {
             dogs.remove(dog)
+            saveDogs()
             true
         } else {
             false
         }
     }
 
-    // Hämtar alla registrerade hundar till gränssnittet
+    // Använd denna när status (t.ex. incheckning) ändras för att spara tillståndet
+    fun updateDogStatus() {
+        saveDogs()
+    }
+
     fun getAllDogs(): List<Dog> {
         return dogs
     }
 
-    // Returnerar bara incheckade hundar (används för showCheckedInDogs)
     fun getCheckedInDogs(): List<Dog> {
         return dogs.filter { it.isCheckedIn }
     }
 
-    // Beräknar statistik över alla räknare (motsvarar showStatistics)
     fun getStatistics(): DogStats {
         val total = dogs.size
         val checkedIn = dogs.count { it.isCheckedIn }
@@ -64,13 +88,11 @@ class DogRegister {
         )
     }
 
-    // Beräknar totala kostnaden för alla incheckade hundar just nu (motsvarar showCosts)
     fun getTotalCostOfCheckedIn(): Double {
         return dogs.filter { it.isCheckedIn }.sumOf { it.getCost() }
     }
 }
 
-// En liten hjälpklass (data class) för att skicka vidare statistiken till Android-skärmen
 data class DogStats(
     val totalDogs: Int,
     val checkedInDogs: Int,
