@@ -37,6 +37,15 @@ class DogRegister(context: Context) {
         return true
     }
 
+    // Uppdaterar en befintlig hund (t.ex. ras eller incheckningsstatus) och sparar direkt
+    fun updateDog(updatedDog: Dog) {
+        val index = dogs.indexOfFirst { it.chipNumber == updatedDog.chipNumber }
+        if (index != -1) {
+            dogs[index] = updatedDog
+            saveDogs()
+        }
+    }
+
     fun findDog(chipNumber: String): Dog? {
         return dogs.find { it.chipNumber == chipNumber }
     }

@@ -47,7 +47,7 @@ fun SokHundSkarm(register: DogRegister, onBack: () -> Unit) {
         key(refresh) {
             val d = dog
             if (d != null) {
-                HundKort(d, { refresh++ }, { register.removeDog(d.chipNumber); dog = null })
+                HundKort(d, register, { refresh++ }, { register.removeDog(d.chipNumber); dog = null })
             } else if (clicked) {
                 Text("Ingen hund hittades!", color = MaterialTheme.colorScheme.error)
             }
@@ -57,7 +57,7 @@ fun SokHundSkarm(register: DogRegister, onBack: () -> Unit) {
 }
 
 @Composable
-fun HundKort(dog: Dog, onRefresh: () -> Unit, onRemove: () -> Unit) {
+fun HundKort(dog: Dog, register: DogRegister, onRefresh: () -> Unit, onRemove: () -> Unit) {
     var isEditing by remember { mutableStateOf(false) }
     var name by remember { mutableStateOf(dog.name) }
     var breed by remember { mutableStateOf(dog.breed) }
@@ -89,7 +89,14 @@ fun HundKort(dog: Dog, onRefresh: () -> Unit, onRemove: () -> Unit) {
                     keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() })
                 )
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Button({ dog.name = name; dog.breed = breed; dog.age = ageText.toIntOrNull() ?: dog.age; isEditing = false; onRefresh() }) { Text("Spara") }
+                    Button({
+                        dog.name = name
+                        dog.breed = breed
+                        dog.age = ageText.toIntOrNull() ?: dog.age
+                        register.updateDog(dog) // Sparar ändringen permanent!
+                        isEditing = false
+                        onRefresh()
+                    }) { Text("Spara") }
                     OutlinedButton({ isEditing = false }) { Text("Avbryt") }
                 }
             } else {
@@ -102,13 +109,46 @@ fun HundKort(dog: Dog, onRefresh: () -> Unit, onRemove: () -> Unit) {
                 Text("Kön: ${if (dog.gender == "H") "Hane" else "Tik"} | Status: ${if (dog.isCheckedIn) "Incheckad" else "Utcheckad"}")
                 if (dog.isCheckedIn) {
                     val formateradKostnad = String.format(Locale.US, "%.2f", dog.getCost())
-                    Text("Tid: ${dog.getStayMinutes()} min | Kostnad: $formateradKostnad kr")
+                    Text("Kostnad: $formateradKostnad kr")
                 }
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(top = 8.dp)) {
-                    Button({ dog.updateCheckInStatus(!dog.isCheckedIn); onRefresh() }) { Text(if (dog.isCheckedIn) "Checka ut" else "Checka in") }
+                    Button({
+                        dog.isCheckedIn = !dog.isCheckedIn // Ändrar status direkt utan felaktigt anrop
+                        register.updateDog(dog)            // Sparar incheckningsstatus permanent!
+                        onRefresh()
+                    }) { Text(if (dog.isCheckedIn) "Checka ut" else "Checka in") }
                     OutlinedButton({ onRemove(); onRefresh() }) { Text("Ta bort") }
                 }
             }
+        }
+    }
+}
+
+@Composable
+fun VisaHundarSkarm(register: DogRegister, enbartIncheckade: Boolean, onBack: () -> Unit) {
+    var refresh by remember { mutableStateOf(0) }
+    val dogs = if (enbartIncheckade) register.getCheckedInDogs() else register.getAllDogs()
+
+    Column(
+        modifier = Modifier.fillMaxSize().padding(16.dp).verticalScroll(rememberScrollState()),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        Text(
+            text = if (enbartIncheckade) "--- INCHECKADE HUNDAR ---" else "--- REGISTRERADE HUNDAR ---",
+            style = MaterialTheme.typography.headlineSmall
+        )
+
+        if (dogs.isEmpty()) {
+            Text("Inga hundar att visa här!", modifier = Modifier.padding(vertical = 32.dp))
+        } else {
+            key(refresh) {
+                dogs.forEach { HundKort(it, register, { refresh++ }, { register.removeDog(it.chipNumber) }) }
+            }
+        }
+
+        OutlinedButton(onClick = onBack, modifier = Modifier.fillMaxWidth()) {
+            Text("Tillbaka till huvudmenyn")
         }
     }
 }
@@ -133,33 +173,5 @@ fun StatistikSkarm(register: DogRegister, onBack: () -> Unit) {
             }
         }
         OutlinedButton(onClick = onBack, modifier = Modifier.fillMaxWidth()) { Text("Tillbaka till huvudmenyn") }
-    }
-}
-@Composable
-fun VisaHundarSkarm(register: DogRegister, enbartIncheckade: Boolean, onBack: () -> Unit) {
-    var refresh by remember { mutableStateOf(0) }
-    val dogs = if (enbartIncheckade) register.getCheckedInDogs() else register.getAllDogs()
-
-    Column(
-        modifier = Modifier.fillMaxSize().padding(16.dp).verticalScroll(rememberScrollState()),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
-        Text(
-            text = if (enbartIncheckade) "--- INCHECKADE HUNDAR ---" else "--- REGISTRERADE HUNDAR ---",
-            style = MaterialTheme.typography.headlineSmall
-        )
-
-        if (dogs.isEmpty()) {
-            Text("Inga hundar att visa här!", modifier = Modifier.padding(vertical = 32.dp))
-        } else {
-            key(refresh) {
-                dogs.forEach { HundKort(it, { refresh++ }, { register.removeDog(it.chipNumber) }) }
-            }
-        }
-
-        OutlinedButton(onClick = onBack, modifier = Modifier.fillMaxWidth()) {
-            Text("Tillbaka till huvudmenyn")
-        }
     }
 }
