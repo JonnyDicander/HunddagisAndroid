@@ -3,6 +3,7 @@ package com.example.minforstaapp
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -31,15 +32,14 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            // Svart och lila färgtema med kontraster
             val darkPurpleColorScheme = darkColorScheme(
-                primary = Color(0xFFBB86FC), // Stark lila
+                primary = Color(0xFFBB86FC),
                 onPrimary = Color(0xFF121212),
-                primaryContainer = Color(0xFF3700B3), // Mörkare lila container
+                primaryContainer = Color(0xFF3700B3),
                 onPrimaryContainer = Color(0xFFEDE7F6),
-                secondary = Color(0xFF03DAC6), // Turkos/accent
-                background = Color(0xFF121212), // Djup svart bakgrund
-                surface = Color(0xFF1E1E1E), // Ljusare svart för kort
+                secondary = Color(0xFF03DAC6),
+                background = Color(0xFF121212),
+                surface = Color(0xFF1E1E1E),
                 onSurface = Color(0xFFE0E0E0),
                 surfaceVariant = Color(0xFF2C2C2C),
                 onSurfaceVariant = Color(0xFFB0B0B0)
@@ -63,27 +63,44 @@ fun HunddagisApp() {
     val register = remember { DogRegister(context) }
     var currentScreen by remember { mutableStateOf(0) }
 
+    BackHandler(enabled = currentScreen != 0) {
+        currentScreen = 0
+    }
+
     when (currentScreen) {
-        0 -> HuvudMeny(onNavigate = { currentScreen = it })
+        0 -> HuvudMeny(
+            checkedInCount = register.getCheckedInDogs().size,
+            totalCount = register.getAllDogs().size,
+            searchDogsCount = register.getSearchDogs().size,
+            onNavigate = { currentScreen = it }
+        )
         1 -> RegistreraHundSkarm(
             onBack = { currentScreen = 0 },
             onDogRegistered = { dog ->
                 if (register.addDog(dog)) {
                     Toast.makeText(context, "Hunden ${dog.name} har välkomnats till J och J's! 🐾", Toast.LENGTH_SHORT).show()
+                    true
                 } else {
                     Toast.makeText(context, "Chipnumret finns redan i registret!", Toast.LENGTH_SHORT).show()
+                    false
                 }
             }
         )
-        2 -> VisaHundarSkarm(register, false) { currentScreen = 0 }
+        2 -> VisaHundarSkarm(register, filterMode = HundFilter.ALLA) { currentScreen = 0 }
         3 -> SokHundSkarm(register) { currentScreen = 0 }
-        8 -> VisaHundarSkarm(register, true) { currentScreen = 0 }
+        7 -> VisaHundarSkarm(register, filterMode = HundFilter.SOKHUNDAR) { currentScreen = 0 }
+        8 -> VisaHundarSkarm(register, filterMode = HundFilter.INCHECKADE) { currentScreen = 0 }
         9 -> StatistikSkarm(register) { currentScreen = 0 }
     }
 }
 
 @Composable
-fun HuvudMeny(onNavigate: (Int) -> Unit) {
+fun HuvudMeny(
+    checkedInCount: Int,
+    totalCount: Int,
+    searchDogsCount: Int,
+    onNavigate: (Int) -> Unit
+) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -95,10 +112,10 @@ fun HuvudMeny(onNavigate: (Int) -> Unit) {
         Icon(
             imageVector = Icons.Default.Pets,
             contentDescription = null,
-            modifier = Modifier.size(68.dp),
+            modifier = Modifier.size(64.dp),
             tint = MaterialTheme.colorScheme.primary
         )
-        Spacer(modifier = Modifier.height(12.dp))
+        Spacer(modifier = Modifier.height(10.dp))
         Text(
             "🐾 J och J's Hunddagis 🐶",
             style = MaterialTheme.typography.headlineMedium,
@@ -106,23 +123,23 @@ fun HuvudMeny(onNavigate: (Int) -> Unit) {
             color = MaterialTheme.colorScheme.primary
         )
         Text(
-            "Välkommen till administrationen!",
+            "Incheckade: $checkedInCount av $totalCount hundar • 50 kr/h",
             style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            color = MaterialTheme.colorScheme.secondary
         )
 
-        Spacer(modifier = Modifier.height(32.dp))
+        Spacer(modifier = Modifier.height(28.dp))
 
         Column(
             modifier = Modifier.fillMaxWidth(0.95f),
-            verticalArrangement = Arrangement.spacedBy(14.dp)
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             MenuCardButton("Registrera ny hund", "🐶", Icons.Default.AddCircle) { onNavigate(1) }
-            MenuCardButton("Visa alla hundar", "📋", Icons.Default.List) { onNavigate(2) }
+            MenuCardButton("Visa & hantera hundar ($totalCount)", "📋", Icons.Default.List) { onNavigate(2) }
+            MenuCardButton("Incheckade hundar ($checkedInCount)", "⏱️", Icons.Default.CheckCircle) { onNavigate(8) }
+            MenuCardButton("Polis & Missing People ($searchDogsCount)", "🚨", Icons.Default.VerifiedUser) { onNavigate(7) }
             MenuCardButton("Sök efter hund", "🔍", Icons.Default.Search) { onNavigate(3) }
-            MenuCardButton("Ändra hunduppgifter", "✏️", Icons.Default.Edit) { onNavigate(2) }
-            MenuCardButton("Incheckade hundar", "✅", Icons.Default.CheckCircle) { onNavigate(8) }
-            MenuCardButton("Statistik & kostnader", "📊", Icons.Default.BarChart) { onNavigate(9) }
+            MenuCardButton("Månadsrapport & Fakturering", "📊", Icons.Default.BarChart) { onNavigate(9) }
         }
     }
 }
@@ -131,7 +148,9 @@ fun HuvudMeny(onNavigate: (Int) -> Unit) {
 fun MenuCardButton(text: String, emoji: String, icon: androidx.compose.ui.graphics.vector.ImageVector, onClick: () -> Unit) {
     Card(
         onClick = onClick,
-        modifier = Modifier.fillMaxWidth().height(64.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(62.dp),
         shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceVariant
@@ -162,7 +181,7 @@ fun MenuCardButton(text: String, emoji: String, icon: androidx.compose.ui.graphi
 }
 
 @Composable
-fun RegistreraHundSkarm(onBack: () -> Unit, onDogRegistered: (Dog) -> Unit) {
+fun RegistreraHundSkarm(onBack: () -> Unit, onDogRegistered: (Dog) -> Boolean) {
     var name by remember { mutableStateOf("") }
     var breed by remember { mutableStateOf("") }
     var chip by remember { mutableStateOf("") }
@@ -173,7 +192,9 @@ fun RegistreraHundSkarm(onBack: () -> Unit, onDogRegistered: (Dog) -> Unit) {
     var groom by remember { mutableStateOf(false) }
     var vision by remember { mutableStateOf(false) }
     var hearing by remember { mutableStateOf(false) }
+    var isSearchDog by remember { mutableStateOf(false) }
 
+    val context = LocalContext.current
     val focusManager = LocalFocusManager.current
 
     Column(
@@ -184,25 +205,11 @@ fun RegistreraHundSkarm(onBack: () -> Unit, onDogRegistered: (Dog) -> Unit) {
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            IconButton(onClick = onBack, modifier = Modifier.size(36.dp)) {
-                Icon(Icons.Default.ArrowBack, contentDescription = "Tillbaka", tint = MaterialTheme.colorScheme.primary)
-            }
-            Text(
-                "🐶 Registrera ny hund",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.padding(start = 8.dp)
-            )
-        }
+        SkarmRubrik(titel = "🐶 Registrera ny hund", onBack = onBack)
 
         OutlinedTextField(
             value = name, onValueChange = { name = it },
-            label = { Text("Hundens namn") },
+            label = { Text("Hundens namn *") },
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(12.dp),
             singleLine = true,
@@ -211,7 +218,7 @@ fun RegistreraHundSkarm(onBack: () -> Unit, onDogRegistered: (Dog) -> Unit) {
         )
         OutlinedTextField(
             value = breed, onValueChange = { breed = it },
-            label = { Text("Ras") },
+            label = { Text("Ras *") },
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(12.dp),
             singleLine = true,
@@ -220,7 +227,7 @@ fun RegistreraHundSkarm(onBack: () -> Unit, onDogRegistered: (Dog) -> Unit) {
         )
         OutlinedTextField(
             value = chip, onValueChange = { chip = it },
-            label = { Text("Chipnummer") },
+            label = { Text("Chipnummer *") },
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(12.dp),
             singleLine = true,
@@ -267,13 +274,20 @@ fun RegistreraHundSkarm(onBack: () -> Unit, onDogRegistered: (Dog) -> Unit) {
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
         ) {
             Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                Text("✨ Egenskaper & Status", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                Text(
+                    "✨ Egenskaper & Tjänster (50 kr/h inkl. allt)",
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary
+                )
                 Spacer(modifier = Modifier.height(2.dp))
                 FormSwitch("Sitter fint med andra 🐾", sit) { sit = it }
                 FormSwitch("Kastrerad ✂️", neutered) { neutered = it }
-                FormSwitch("Behöver pälsvård 🪮", groom) { groom = it }
+                FormSwitch("Behöver pälsvård (ingår) 🪮", groom) { groom = it }
                 FormSwitch("Synnedsättning 👁️‍🗨️", vision) { vision = it }
                 FormSwitch("Hörselnedsättning 🦻", hearing) { hearing = it }
+                HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
+                FormSwitch("Sökhund: Polis / Missing People 🚨", isSearchDog) { isSearchDog = it }
             }
         }
 
@@ -281,9 +295,27 @@ fun RegistreraHundSkarm(onBack: () -> Unit, onDogRegistered: (Dog) -> Unit) {
 
         Button(
             onClick = {
+                if (name.isBlank() || breed.isBlank() || chip.isBlank()) {
+                    Toast.makeText(context, "Vänligen fyll i namn, ras och chipnummer! ⚠️", Toast.LENGTH_SHORT).show()
+                    return@Button
+                }
                 val age = ageText.toIntOrNull() ?: 0
-                onDogRegistered(Dog(name, breed, chip, gender, age, sit, neutered, groom, vision, hearing))
-                onBack()
+                val nyHund = Dog(
+                    name = name.trim(),
+                    breed = breed.trim(),
+                    chipNumber = chip.trim(),
+                    gender = gender,
+                    age = age,
+                    sitsNicely = sit,
+                    isNeutered = neutered,
+                    needsGrooming = groom,
+                    visionImpaired = vision,
+                    hearingImpaired = hearing,
+                    isSearchDog = isSearchDog
+                )
+                if (onDogRegistered(nyHund)) {
+                    onBack()
+                }
             },
             modifier = Modifier.fillMaxWidth().height(48.dp),
             shape = RoundedCornerShape(16.dp)
@@ -298,8 +330,6 @@ fun RegistreraHundSkarm(onBack: () -> Unit, onDogRegistered: (Dog) -> Unit) {
         ) {
             Text("Avbryt")
         }
-
-        Spacer(modifier = Modifier.height(16.dp))
     }
 }
 
@@ -309,8 +339,7 @@ fun FormSwitch(label: String, checked: Boolean, onCheckedChange: (Boolean) -> Un
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(label, style = MaterialTheme.typography.bodyMedium)
-        Spacer(modifier = Modifier.weight(1f))
+        Text(label, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
         Switch(checked = checked, onCheckedChange = onCheckedChange)
     }
 }
