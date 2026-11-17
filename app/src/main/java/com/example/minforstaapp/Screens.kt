@@ -27,7 +27,6 @@ enum class HundFilter {
     ALLA, INCHECKADE, SOKHUNDAR
 }
 
-// Hjälpfunktion som ger aktuell tid varje sekund så att timern tickar live i UI:t
 @Composable
 fun rememberCurrentTimeMillis(): Long {
     var now by remember { mutableStateOf(System.currentTimeMillis()) }
@@ -88,8 +87,8 @@ fun SokHundSkarm(register: DogRegister, onBack: () -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(16.dp)
-            .verticalScroll(rememberScrollState()),
+            .verticalScroll(rememberScrollState())
+            .padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 32.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
@@ -228,7 +227,7 @@ fun HundKort(dog: Dog, register: DogRegister, nowMillis: Long) {
                     keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() })
                 )
                 FormSwitch("Behöver pälsvård (ingår) 🪮", groom) { groom = it }
-                FormSwitch("Sökhund: Polis / Missing People 🚨", isSearchDog) { isSearchDog = it }
+                FormSwitch("Sökhund: Polis / Missing People 🚓", isSearchDog) { isSearchDog = it }
 
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Button(
@@ -267,7 +266,7 @@ fun HundKort(dog: Dog, register: DogRegister, nowMillis: Long) {
                 Text("Ras: ${dog.breed} • Ålder: ${dog.age} år • Chip: ${dog.chipNumber}", style = MaterialTheme.typography.bodyMedium)
 
                 val traits = buildList {
-                    if (dog.isSearchDog) add("🚨 Sökhund (Polis/MP)")
+                    if (dog.isSearchDog) add("🚓 Sökhund (Polis/MP)")
                     if (dog.sitsNicely) add("🐾 Sitter fint")
                     if (dog.isNeutered) add("✂️ Kastrerad")
                     if (dog.needsGrooming) add("🪮 Pälsvård ingår")
@@ -284,7 +283,6 @@ fun HundKort(dog: Dog, register: DogRegister, nowMillis: Long) {
 
                 HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
 
-                // INCHECKNINGSSTATUS & REALTIDSTIMER (obegränsad tid, startar från 0 vid ny incheckning)
                 if (dog.isCheckedIn) {
                     val sessionSec = dog.getCurrentSessionSeconds(nowMillis)
                     val sessionCost = dog.getCurrentSessionCost(nowMillis)
@@ -302,13 +300,12 @@ fun HundKort(dog: Dog, register: DogRegister, nowMillis: Long) {
                     )
                 }
 
-                // POLIS / MISSING PEOPLE-UPPDRAG
                 if (dog.isSearchDog) {
                     if (dog.isOnSearchMission) {
                         val missionSec = dog.getCurrentMissionSeconds(nowMillis)
                         val missionCost = dog.getCurrentMissionCost(nowMillis)
                         Text(
-                            text = "🚨 UTE PÅ SÖKUPPDRAG (Polis / Missing People)",
+                            text = "🚓 UTE PÅ SÖKUPPDRAG (Polis / Missing People)",
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.primary
                         )
@@ -316,14 +313,13 @@ fun HundKort(dog: Dog, register: DogRegister, nowMillis: Long) {
                         Text("💰 Uppdragskostnad: ${formatKr(missionCost)} (1000 kr för 3h, därefter 500 kr/h)")
                     } else {
                         Text(
-                            text = "🚨 Tillgänglig för Polis / Missing People (1000 kr start / 3h + 500 kr/h)",
+                            text = "🚓 Tillgänglig för Polis / Missing People (1000 kr start / 3h + 500 kr/h)",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.primary
                         )
                     }
                 }
 
-                // SUMMERING FÖR AKTUELL DAG & MÅNAD PÅ HUNDKORTET
                 val todayTotal = dog.getTotalTodayCostExVat(nowMillis)
                 val monthTotalExVat = dog.getTotalMonthlyCostExVat(nowMillis)
                 val monthTotalIncVat = dog.getTotalMonthlyCostIncVat(nowMillis)
@@ -335,7 +331,6 @@ fun HundKort(dog: Dog, register: DogRegister, nowMillis: Long) {
                     color = MaterialTheme.colorScheme.onSurface
                 )
 
-                // KNAPPAR FÖR DAGIS IN/UTCHECKNING (+1h testknapp)
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(top = 4.dp)) {
                     Button(
                         onClick = {
@@ -368,7 +363,6 @@ fun HundKort(dog: Dog, register: DogRegister, nowMillis: Long) {
                     }
                 }
 
-                // KNAPPAR FÖR POLIS / MISSING PEOPLE-UPPDRAG
                 if (dog.isSearchDog) {
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(top = 2.dp)) {
                         FilledTonalButton(
@@ -384,7 +378,7 @@ fun HundKort(dog: Dog, register: DogRegister, nowMillis: Long) {
                         ) {
                             Text(
                                 if (dog.isOnSearchMission) "Avsluta sökuppdrag"
-                                else "🚨 Starta sökuppdrag (Polis / MP)"
+                                else "🚓 Starta sökuppdrag (Polis / MP)"
                             )
                         }
                         if (dog.isOnSearchMission) {
@@ -414,14 +408,14 @@ fun VisaHundarSkarm(register: DogRegister, filterMode: HundFilter, onBack: () ->
     val rubrik = when (filterMode) {
         HundFilter.ALLA -> "📋 Alla hundar (${dogs.size})"
         HundFilter.INCHECKADE -> "⏱️ Incheckade hundar (${dogs.size})"
-        HundFilter.SOKHUNDAR -> "🚨 Polis & Missing People (${dogs.size})"
+        HundFilter.SOKHUNDAR -> "🚓 Polis & Missing People (${dogs.size})"
     }
 
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(16.dp)
-            .verticalScroll(rememberScrollState()),
+            .verticalScroll(rememberScrollState())
+            .padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 32.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
@@ -435,7 +429,7 @@ fun VisaHundarSkarm(register: DogRegister, filterMode: HundFilter, onBack: () ->
             ) {
                 val emptyText = when (filterMode) {
                     HundFilter.INCHECKADE -> "Inga hundar är incheckade just nu! 🐾"
-                    HundFilter.SOKHUNDAR -> "Inga hundar är markerade som sökhundar för Polis / Missing People ännu! 🚨\n\nDu kan aktivera detta när du registrerar eller ändrar en hund."
+                    HundFilter.SOKHUNDAR -> "Inga hundar är markerade som sökhundar för Polis / Missing People ännu! 🚓\n\nDu kan aktivera detta när du registrerar eller ändrar en hund."
                     HundFilter.ALLA -> "Inga hundar är registrerade ännu! 🐶"
                 }
                 Text(
@@ -469,12 +463,10 @@ fun StatistikSkarm(register: DogRegister, onBack: () -> Unit) {
     val stats = register.getStatistics()
     val allDogs = register.getAllDogs()
 
-    // Beräkningar för aktuell dag
     val todayCostExVat = allDogs.sumOf { it.getTotalTodayCostExVat(nowMillis) }
     val todayVat = todayCostExVat * Dog.VAT_RATE
     val todayCostIncVat = todayCostExVat + todayVat
 
-    // Beräkningar för månadsrapport
     val monthDaycareExVat = allDogs.sumOf { it.monthlyDaycareCostExVat + it.getCurrentSessionCost(nowMillis) }
     val monthMissionExVat = allDogs.sumOf { it.monthlyMissionCostExVat + it.getCurrentMissionCost(nowMillis) }
     val monthTotalExVat = monthDaycareExVat + monthMissionExVat
@@ -484,14 +476,13 @@ fun StatistikSkarm(register: DogRegister, onBack: () -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(16.dp)
-            .verticalScroll(rememberScrollState()),
+            .verticalScroll(rememberScrollState())
+            .padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 32.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
         SkarmRubrik(titel = "📊 Månadsrapport & Faktura", onBack = onBack)
 
-        // KORT 1: AKTUELL DAG
         Card(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(20.dp),
@@ -518,7 +509,6 @@ fun StatistikSkarm(register: DogRegister, onBack: () -> Unit) {
             }
         }
 
-        // KORT 2: MÅNADSRAPPORT & FAKTURERING (25 % MOMS)
         Card(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(20.dp),
@@ -538,7 +528,6 @@ fun StatistikSkarm(register: DogRegister, onBack: () -> Unit) {
             }
         }
 
-        // KORT 3: SPECIFIKATION PER HUND
         Card(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(20.dp),
@@ -570,7 +559,7 @@ fun StatistikSkarm(register: DogRegister, onBack: () -> Unit) {
                             if (dog.isSearchDog || totalMissionMin > 0) {
                                 val missionsCount = dog.monthlyMissionCount + if (dog.isOnSearchMission) 1 else 0
                                 Text(
-                                    text = "🚨 Polis/MP-uppdrag: $missionsCount st (${formatMinutes(totalMissionMin)})",
+                                    text = "🚓 Polis/MP-uppdrag: $missionsCount st (${formatMinutes(totalMissionMin)})",
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.primary
                                 )
